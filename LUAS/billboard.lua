@@ -18,10 +18,19 @@ for _,v in ipairs(imgs)do
     table.insert(files,p)
   end
 end
+local w,h=term.getSize()
 while true do
   for _,p in ipairs(files)do
     term.clear()
-    paintutils.drawImage(paintutils.loadImage(p),1,1)
+    local img=paintutils.loadImage(p)
+    if img then
+      local iw,ih=#img[1],#img
+      local x=math.max(1,math.floor((w-iw)/2)+1)
+      local y=math.max(1,math.floor((h-ih)/2)+1)
+      if iw<=w and ih<=h then
+        paintutils.drawImage(img,x,y)
+      end
+    end
     sleep(3)
   end
 end
