@@ -1,0 +1,80 @@
+╔══════════════════════════════════════════════════════════════╗
+║  GIT FOR COMPUTERCRAFT - QUICK REFERENCE                     ║
+╚══════════════════════════════════════════════════════════════╝
+
+FIRST TIME SETUP
+────────────────
+git config username/repo
+git clone
+
+DAILY COMMANDS
+──────────────
+git pull LUAS/billboard.lua     Pull single file
+git check                        Check for updates
+git sync                         Download all updates
+git tree                         Show repo structure
+
+NETWORK SETUP
+─────────────
+Master:  gitd &                  Auto-sync daemon
+Clients: git listen &            Auto-update listener
+
+EXAMPLE TREE OUTPUT
+───────────────────
+> git tree
+
+├── LUAS/
+│   ├── billboard.lua
+│   ├── monitor.lua
+│   └── startup.lua
+├── modules/
+│   ├── github.lua
+│   └── network.lua
+├── configs/
+│   └── monitors.cfg
+└── README.md
+
+EXAMPLE CHECK OUTPUT
+────────────────────
+> git check
+
+[UPDATE] LUAS/billboard.lua
+[UPDATE] modules/github.lua
+Up to date: LUAS/monitor.lua
+Up to date: configs/monitors.cfg
+
+EXAMPLE SYNC OUTPUT
+───────────────────
+> git sync
+
+Found 2 updates
+Pulled: LUAS/billboard.lua -> /git/LUAS/billboard.lua
+Pulled: modules/github.lua -> /git/modules/github.lua
+Broadcast update to network
+
+NETWORK BROADCAST FLOW
+──────────────────────
+[Server Computer]
+  gitd.lua running (5min interval)
+    ↓ checks GitHub
+    ↓ finds updates
+    ↓ pulls files
+    ↓ broadcasts via rednet
+          ↓
+    [Client 1] ← rednet → [Client 2] ← rednet → [Client 3]
+    auto-pulls            auto-pulls            auto-pulls
+
+FILE PATHS
+──────────
+git.lua        Main tool (place in root)
+git.cfg        Auto-generated config
+gitd.lua       Daemon for auto-sync
+/git/*         Default download location
+
+TIPS
+────
+• Use 'git tree' to browse repo before pulling
+• Set custom destination: git pull file.lua /custom/path.lua
+• Clone specific folder: git clone LUAS/
+• Check single folder: git check modules/
+• Config persists across reboots

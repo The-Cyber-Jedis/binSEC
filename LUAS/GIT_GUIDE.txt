@@ -1,0 +1,117 @@
+GIT FOR COMPUTERCRAFT TWEAKED
+==============================
+
+ULTRA-COMPACT GITHUB INTEGRATION TOOL
+
+SETUP
+-----
+1. Place git.lua in root directory
+2. Configure repo:
+   git config username/repo main /git
+
+COMMANDS
+--------
+
+git config <repo> [branch] [dir]
+  Configure GitHub repository
+  Example: git config myuser/myrepo main /programs
+  Saves to /git.cfg for persistence
+
+git tree [path]
+  Display repository structure in tree format
+  Example: git tree
+  Example: git tree scripts/
+
+git pull <path> [dest]
+  Download single file from repo
+  Example: git pull LUAS/billboard.lua
+  Example: git pull scripts/test.lua /home/test.lua
+
+git view <path>
+  View file contents without downloading
+  Example: git view README.md
+
+git check [path]
+  Check for file updates (compares hashes)
+  Example: git check
+  Example: git check LUAS/
+  Shows [UPDATE] for modified files
+
+git sync
+  Auto-download all updated files + broadcast to network
+  Example: git sync
+  Pulls updates and notifies other computers
+
+git clone [path]
+  Download entire repo or folder recursively
+  Example: git clone
+  Example: git clone LUAS/
+
+git listen
+  Listen for network update broadcasts
+  Example: git listen
+  Runs continuously, auto-pulls when updates broadcast
+
+NETWORK AUTO-UPDATE SETUP
+--------------------------
+
+MASTER COMPUTER (checks for updates):
+1. git config user/repo main /git
+2. gitd.lua (daemon - checks every 5min)
+
+SLAVE COMPUTERS (receive updates):
+1. git config user/repo main /git
+2. git listen (runs continuously)
+
+WORKFLOW EXAMPLE
+----------------
+
+Initial setup:
+> git config myuser/ccscripts main /programs
+> git clone
+
+Daily usage:
+> git pull LUAS/billboard.lua
+
+Check for updates:
+> git check
+[UPDATE] LUAS/billboard.lua
+[UPDATE] tools/monitor.lua
+
+Sync all updates:
+> git sync
+Found 2 updates
+Pulled: LUAS/billboard.lua -> /programs/LUAS/billboard.lua
+Pulled: tools/monitor.lua -> /programs/tools/monitor.lua
+Broadcast update to network
+
+ADVANCED: WAREHOUSE NETWORK
+---------------------------
+
+Central server:
+- Runs gitd.lua (auto-sync every 5min)
+- Broadcasts updates to all computers
+
+Client computers:
+- Run git listen in background
+- Auto-receive updates when server syncs
+
+Setup:
+Server> gitd &
+Client> git listen &
+
+TECHNICAL NOTES
+---------------
+- Uses GitHub API + raw.githubusercontent.com
+- File hash: Simple 31-bit rolling hash for change detection
+- Network: Uses rednet protocol "git"
+- Config stored in /git.cfg (persists across reboots)
+- Default download directory: /git
+
+COMPACT ALTERNATIVE USAGE
+--------------------------
+From Lua code:
+  os.loadAPI("git.lua")
+  git.pull("scripts/test.lua")
+  git.sync()
+  git.tree()
