@@ -246,6 +246,49 @@ canvas {
   font-size: 0.9rem;
 }
 
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.preset-btn {
+  padding: 0.5rem;
+  font-size: 0.75rem;
+  background: var(--cc-bg);
+  border: 1px solid var(--cc-border);
+  color: var(--cc-text);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+  text-transform: none;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.preset-btn:hover {
+  border-color: var(--cc-accent);
+  background: var(--cc-bg);
+  transform: none;
+  box-shadow: none;
+}
+
+.preset-btn.active {
+  background: var(--cc-accent);
+  color: var(--cc-bg);
+  border-color: var(--cc-accent);
+}
+
+.info-box {
+  background: rgba(76, 153, 178, 0.1);
+  border: 1px solid var(--cc-accent);
+  border-radius: 4px;
+  padding: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--cc-text);
+  margin-top: 0.5rem;
+}
+
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
@@ -275,19 +318,32 @@ canvas {
       </div>
 
       <div class="section">
-        <div class="section-title">Size Settings</div>
+        <div class="section-title">Monitor Presets</div>
+        <div class="preset-grid">
+          <button class="preset-btn active" data-w="70" data-h="30">7×5 @ 0.5<br>70×30px</button>
+          <button class="preset-btn" data-w="35" data-h="15">7×5 @ 1.0<br>35×15px</button>
+          <button class="preset-btn" data-w="82" data-h="57">Max @ 0.5<br>82×57px</button>
+          <button class="preset-btn" data-w="164" data-h="81">Max @ 1.0<br>164×81px</button>
+        </div>
+        <div class="info-box">
+          <strong>7×5 monitor</strong> is most common. Use scale 0.5 for max detail (70×30px).
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Manual Size</div>
         <div class="control-group">
           <label>Width (pixels)</label>
-          <input type="range" id="widthSlider" min="8" max="164" value="82">
-          <div class="value-display"><span id="widthValue">82</span>px</div>
+          <input type="range" id="widthSlider" min="8" max="164" value="70">
+          <div class="value-display"><span id="widthValue">70</span>px</div>
         </div>
         <div class="control-group">
           <label>Height (pixels)</label>
-          <input type="range" id="heightSlider" min="8" max="81" value="57">
-          <div class="value-display"><span id="heightValue">57</span>px</div>
+          <input type="range" id="heightSlider" min="8" max="81" value="30">
+          <div class="value-display"><span id="heightValue">30</span>px</div>
         </div>
         <div class="checkbox-group">
-          <input type="checkbox" id="aspectLock" checked>
+          <input type="checkbox" id="aspectLock">
           <label for="aspectLock" style="margin: 0;">Lock aspect ratio</label>
         </div>
       </div>
@@ -297,21 +353,23 @@ canvas {
         <div class="control-group">
           <label>Dithering Algorithm</label>
           <select id="ditherMode">
-            <option value="none">None (Nearest Color)</option>
-            <option value="floyd" selected>Floyd-Steinberg</option>
-            <option value="atkinson">Atkinson</option>
-            <option value="ordered">Ordered (Bayer)</option>
+            <option value="floyd" selected>Floyd-Steinberg (Best)</option>
+            <option value="atkinson">Atkinson (Softer)</option>
+            <option value="ordered">Ordered Bayer (Pattern)</option>
+            <option value="none">None (Sharp)</option>
           </select>
         </div>
         <div class="control-group">
-          <label>Brightness</label>
+          <label>Brightness: <span id="brightnessValue">0</span></label>
           <input type="range" id="brightness" min="-50" max="50" value="0">
-          <div class="value-display"><span id="brightnessValue">0</span></div>
         </div>
         <div class="control-group">
-          <label>Contrast</label>
+          <label>Contrast: <span id="contrastValue">0</span></label>
           <input type="range" id="contrast" min="-50" max="50" value="0">
-          <div class="value-display"><span id="contrastValue">0</span></div>
+        </div>
+        <div class="control-group">
+          <label>Saturation: <span id="saturationValue">0</span></label>
+          <input type="range" id="saturation" min="-50" max="50" value="0">
         </div>
       </div>
 
@@ -321,17 +379,15 @@ canvas {
     </div>
 
     <div class="panel preview-area">
-      <div class="preview-container">
-        <div id="emptyState" class="empty-state">
-          Upload an image to begin conversion
+      <div id="emptyState" class="empty-state">
+        Upload an image to begin
+      </div>
+      <div id="previewContent" class="preview-container" style="display:none;">
+        <div class="canvas-wrapper">
+          <canvas id="preview"></canvas>
         </div>
-        <div id="previewContent" style="display: none;">
-          <div class="canvas-wrapper">
-            <canvas id="preview"></canvas>
-          </div>
-          <div class="preview-info">
-            <span id="previewDims"></span>
-          </div>
+        <div class="preview-info">
+          <span id="previewDims"></span>
         </div>
       </div>
     </div>
@@ -357,7 +413,7 @@ const $ = id => document.getElementById(id);
 const uploadZone = $('uploadZone');
 const fileInput = $('fileInput');
 const canvas = $('preview');
-const ctx = canvas.getContext('2d');
+const ctx = canvas.getContext('2d', { willReadFrequently: true });
 const widthSlider = $('widthSlider');
 const heightSlider = $('heightSlider');
 const aspectLock = $('aspectLock');
@@ -389,6 +445,20 @@ fileInput.onchange = e => {
   if (e.target.files.length) handleFile(e.target.files[0]);
 };
 
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    
+    widthSlider.value = btn.dataset.w;
+    heightSlider.value = btn.dataset.h;
+    aspectLock.checked = false;
+    
+    updateValues();
+    if (originalImage) convert();
+  };
+});
+
 function handleFile(file) {
   if (!file.type.match('image/(png|jpeg|jpg)')) return;
   
@@ -399,16 +469,6 @@ function handleFile(file) {
       originalImage = img;
       aspectRatio = img.width / img.height;
       
-      const maxW = 164, maxH = 81;
-      let w = Math.min(img.width, maxW);
-      let h = Math.round(w / aspectRatio);
-      if (h > maxH) {
-        h = maxH;
-        w = Math.round(h * aspectRatio);
-      }
-      
-      widthSlider.value = w;
-      heightSlider.value = h;
       updateValues();
       convert();
       
@@ -445,6 +505,10 @@ $('contrast').oninput = () => {
   $('contrastValue').textContent = $('contrast').value;
   originalImage && convert();
 };
+$('saturation').oninput = () => {
+  $('saturationValue').textContent = $('saturation').value;
+  originalImage && convert();
+};
 
 function updateValues() {
   $('widthValue').textContent = widthSlider.value;
@@ -461,21 +525,39 @@ function convert() {
   const tempCanvas = document.createElement('canvas');
   tempCanvas.width = w;
   tempCanvas.height = h;
-  const tempCtx = tempCanvas.getContext('2d');
+  const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
   
+  tempCtx.imageSmoothingEnabled = true;
+  tempCtx.imageSmoothingQuality = 'high';
   tempCtx.drawImage(originalImage, 0, 0, w, h);
   let imageData = tempCtx.getImageData(0, 0, w, h);
   
   const brightness = parseInt($('brightness').value);
   const contrast = parseInt($('contrast').value);
+  const saturation = parseInt($('saturation').value) / 100;
   
-  if (brightness !== 0 || contrast !== 0) {
-    const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
-    for (let i = 0; i < imageData.data.length; i += 4) {
-      imageData.data[i] = clamp(factor * (imageData.data[i] - 128) + 128 + brightness);
-      imageData.data[i+1] = clamp(factor * (imageData.data[i+1] - 128) + 128 + brightness);
-      imageData.data[i+2] = clamp(factor * (imageData.data[i+2] - 128) + 128 + brightness);
+  for (let i = 0; i < imageData.data.length; i += 4) {
+    let r = imageData.data[i];
+    let g = imageData.data[i+1];
+    let b = imageData.data[i+2];
+    
+    if (saturation !== 0) {
+      const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+      r = gray + (r - gray) * (1 + saturation);
+      g = gray + (g - gray) * (1 + saturation);
+      b = gray + (b - gray) * (1 + saturation);
     }
+    
+    if (brightness !== 0 || contrast !== 0) {
+      const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+      r = factor * (r - 128) + 128 + brightness;
+      g = factor * (g - 128) + 128 + brightness;
+      b = factor * (b - 128) + 128 + brightness;
+    }
+    
+    imageData.data[i] = clamp(r);
+    imageData.data[i+1] = clamp(g);
+    imageData.data[i+2] = clamp(b);
   }
   
   const mode = $('ditherMode').value;
@@ -493,7 +575,7 @@ function convert() {
   ctx.putImageData(imageData, 0, 0);
   
   nfpData = generateNFP(imageData, w, h);
-  $('previewDims').textContent = `${w}×${h} • ${nfpData.split('\n').length} lines`;
+  $('previewDims').textContent = `${w}×${h} • ${nfpData.split('\n').length} lines • ComputerCraft 16-color`;
   downloadBtn.disabled = false;
 }
 
